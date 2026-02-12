@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desktop Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        #bg-video {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            z-index: -1;
+            object-fit: cover;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        .dashboard-layout {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .left-side {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* Pushes the clock to the right side of the left half */
+            align-items: flex-end; 
+            padding-right: 60px; /* Space between clock and center line */
+        }
+
+        .timer-container {
+            text-align: right; /* Aligns labels to the right */
+        }
+
+        .timer-label {
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            opacity: 0.5;
+            margin-bottom: 20px;
+            padding-right: 10px;
+        }
+
+        .timer-row {
+            display: flex;
+            gap: 40px;
+            justify-content: flex-end; /* Keeps segments aligned right */
+        }
+
+        .top-row {
+            margin-bottom: 30px;
+        }
+
+        .timer-segment {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Centers the text under the big numbers */
+            min-width: 80px;
+        }
+
+        .timer-segment span {
+            font-size: 4.5rem; /* Large impact numbers */
+            font-weight: 800;
+            line-height: 1;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            text-shadow: 0 0 20px rgba(255, 102, 204, 0.3);
+        }
+
+        .timer-segment small {
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            opacity: 0.6;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        .right-side {
+            flex: 1; /* Takes 50% of the screen */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-right: 50px;
+        }
+
+        /* Adjust the timer size slightly to fit the half-screen better */
+        .timer-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .timer-segment span {
+            font-size: 3rem; /* Slightly smaller for split view */
+            color: #ff66cc; /* Pink glow */
+        }
+
+        .left-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column; /* Allows you to stack a title above the timer */
+            justify-content: center;
+            align-items: center;
+            border-right: 0px solid rgba(255, 255, 255, 0.1); /* Subtle divider */
+        }
+
+        /* Normal state transition */
+        .timer-container {
+            transition: all 1s ease;
+        }
+
+        /* Milestone "Glow" State */
+        .milestone-active {
+            border-color: #ffcc00; /* Gold Border */
+            box-shadow: 0 0 50px rgba(255, 204, 0, 0.4);
+            transform: scale(1.05);
+        }
+
+        .milestone-active span {
+            color: #ffcc00 !important;
+            text-shadow: 0 0 30px rgba(255, 204, 0, 0.8) !important;
+        }
+
+        /* Optional: Add a subtle pulse animation */
+        @keyframes pulse-gold {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .milestone-active .timer-display {
+            animation: pulse-gold 2s infinite;
+        }
+
+        /* 2. THE BOTTOM TASKBAR */
+        .taskbar {
+            position: fixed;
+            bottom: 20px; /* Floating slightly above the bottom */
+            left: 50%;
+            transform: translateX(-50%); /* Centers the bar */
+            
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            
+            display: flex;
+            padding: 10px 20px;
+            gap: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 100;
+
+            
+        }
+
+        /* 3. TASKBAR ICONS */
+        .task-item {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 20px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        /* Tooltip style */
+        .task-item::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -40px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .task-item:hover::after { opacity: 1; top: -50px; }
+
+        .task-item:hover {
+            transform: translateY(-10px) scale(1.2);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .logout-btn {
+            background: rgba(255, 80, 80, 0.3) !important;
+        }
+
+        /* THE UPDATED MUSIC PLAYER CSS */
+        .music-player {
+            position: fixed;
+            bottom: 90px; /* Sits above the taskbar */
+            right: 20px;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+
+            /* ANIMATION LOGIC: Starts hidden and lowered */
+            opacity: 0;
+            transform: translateY(30px);
+            pointer-events: none; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* This class is triggered by your Taskbar Button */
+        .music-player.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .album-art {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff6b6b, #f06595);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .track-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .player-controls button {
+            background: white;
+            border: none;
+            color: #333;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        .player-controls button:hover {
+            transform: scale(1.1);
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .floating-player {
+            position: fixed;
+            bottom: 90px; /* Sits above the taskbar */
+            right: 30px;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 9999; /* Always on top */
+            transition: transform 0.3s ease;
+        }
+
+        .floating-player:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .mini-disc {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff66cc, #ff4d4d);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            animation: spin 5s linear infinite;
+            animation-play-state: paused;
+        }
+
+        .mini-disc.playing { animation-play-state: running; }
+
+        .mini-content { flex: 1; }
+
+        .mini-details span {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .mini-details small { font-size: 10px; opacity: 0.7; }
+
+        .mini-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 8px;
+        }
+
+        .mini-controls button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .mini-play-btn {
+            background: white !important;
+            color: black !important;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* 1. Define the Keyframes */
+        @keyframes fadeInSlide {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+                filter: blur(10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        /* 2. Apply it to the main container */
+        .dashboard-layout {
+            animation: fadeInSlide 2.2s ease-out forwards;
+        }
+
+        /* 3. Staggered Animation for the Taskbar */
+        
+
+        /* 4. Staggered Animation for the Floating Player */
+        .floating-player {
+            opacity: 0;
+            animation: fadeInSlide 0.8s ease-out 0.8s forwards; /* 0.8s delay */
+        }
+
+        #bg-video {
+            transition: opacity 5s ease-in-out;
+        }
+
+        .alert-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 10001;
+        }
+
+        .alert-window {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            width: 350px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .alert-header {
+            background: rgba(255, 102, 204, 0.2); /* Pink tint */
+            padding: 10px 20px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-body {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .alert-body h3 { margin: 0 0 10px 0; color: #ff66cc; }
+        .alert-body p { font-size: 14px; opacity: 0.8; line-height: 1.5; }
+
+        .alert-btn {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: white;
+            color: black;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .alert-btn:hover { background: #ff66cc; color: white; }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .settings-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(15px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 30000;
+        }
+
+        .settings-window {
+            width: 700px;
+            height: 450px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+        }
+
+        .settings-sidebar {
+            width: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-item {
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .sidebar-item.active, .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ff66cc;
+        }
+
+        .settings-content {
+            flex: 1;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .account-profile {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin: 20px 0;
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .profile-pic {
+            width: 60px; height: 60px;
+            background: #ff66cc;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop id="bg-video">
+        <source src="Video/Sunset Above the Clouds Sky Timelapse Nature HD Scene Video Background Loop - HD Scenes (1080p, h264).mp4" type="video/mp4">
+    </video>
+
+    <main class="dashboard-layout">
+        <div class="left-side">
+            <div class="left-side">
+                <div class="timer-container">
+                    <h3 class="timer-label">TIME ELAPSED SINCE START</h3>
+                    
+                    <div class="timer-row top-row">
+                        <div class="timer-segment">
+                            <span id="years">00</span>
+                            <small>YEARS</small>
+                        </div>
+                        <div class="timer-segment">
+                            <span id="days">000</span>
+                            <small>DAYS</small>
+                        </div>
+                    </div>
+            
+                    <div class="timer-row bottom-row">
+                        <div class="timer-segment">
+                            <span id="hours">00</span>
+                            <small>HOURS</small>
+                        </div>
+                        <div class="timer-segment">
+                            <span id="minutes">00</span>
+                            <small>MINUTES</small>
+                        </div>
+                        <div class="timer-segment">
+                            <span id="seconds">00</span>
+                            <small>SECONDS</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div class="right-side">
+            <div class="welcome-area">
+                <h1> <span id="userNameDisplay">User</span></h1>
+                <p>System status: Optimal</p>
+            </div>
+        </div>
+    </main>
+
+    <div class="taskbar">
+        <a href="Dashboard.html" class="task-item" data-label="Home" style="background: #4a90e255;">
+            <i class="fa-solid fa-house"></i>
+        </a>
+        <a href="javascript:void(0)" class="task-item" onclick="showMessagesAlert()" data-label="Messages" style="background: #50e3c255;">
+            <i class="fa-solid fa-comment"></i>
+        </a>
+        <a href="Gifts.html" class="task-item" data-label="Gifts" style="background: #eaff5f55;">
+            <i class="fa-solid fa-gift"></i>
+        </a>
+        <a href="javascript:void(0)" class="task-item" onclick="showMessagesAlert()" data-label="Games" style="background: #29e9fb55;">
+            <i class="fa-solid fa-puzzle-piece"></i>
+        </a>
+        <a href="javascript:void(0)" class="task-item" onclick="showMessagesAlert()" data-label="Files" style="background: #f5a62355;">
+            <i class="fa-solid fa-folder"></i>
+        </a>
+        <a href="music.html" class="task-item" data-label="Music" style="background: #ff66cc55;">
+            <i class="fa-solid fa-music"></i>
+        </a>
+        <a href="javascript:void(0)" class="task-item" onclick="openSettings()" data-label="Settings" style="background: #9b9b9b55;">
+            <i class="fa-solid fa-gear"></i>
+        </a>
+        <a href="#" class="task-item logout-btn" data-label="Logout" onclick="logout()">
+            <i class="fa-solid fa-power-off"></i>
+        </a>
+    </div>
+
+    <div class="music-player">
+        <div class="album-art">
+            <i class="fa-solid fa-music"></i>
+        </div>
+        <div class="player-info">
+            <span class="track-name">Lo-fi Study Beats</span>
+            <div class="player-controls">
+                <button onclick="togglePlay()"><i id="playIcon" class="fa-solid fa-play"></i></button>
+            </div>
+        </div>
+        <audio id="myAudio" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    </div>
+
+    <div class="floating-player" id="floatingPlayer">
+        <div class="mini-disc" id="miniDisc">
+            <i class="fa-solid fa-compact-disc"></i>
+        </div>
+        
+        <div class="mini-content">
+            <div class="mini-details">
+                <span id="miniTrackName">No Track Selected</span>
+                <small id="miniArtistName">Station 2026</small>
+            </div>
+            
+            <div class="mini-controls">
+                <button onclick="prevSong()"><i class="fa-solid fa-backward"></i></button>
+                <button class="mini-play-btn" onclick="togglePlay()">
+                    <i id="miniPlayIcon" class="fa-solid fa-play"></i>
+                </button>
+                <button onclick="nextSong()"><i class="fa-solid fa-forward"></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="alertOverlay" class="alert-overlay">
+        <div class="alert-window">
+            <div class="alert-header">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>SYSTEM MESSAGE</span>
+            </div>
+            <div class="alert-body">
+                <h3>Feature Unavailable</h3>
+                <p> This Feature is currently restricted. This module is scheduled for the next system update.</p>
+                <button onclick="closeAlert()" class="alert-btn">UNDERSTOOD</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsOverlay" class="settings-overlay">
+        <div class="settings-window">
+            <div class="settings-sidebar">
+                <div class="sidebar-item active" onclick="showSettingTab('account')">
+                    <i class="fa-solid fa-user-gear"></i> Account
+                </div>
+                <div class="sidebar-item" onclick="showSettingTab('system')">
+                    <i class="fa-solid fa-display"></i> System
+                </div>
+                <div class="sidebar-item" onclick="closeSettings()" style="margin-top: auto; color: #ff4d4d;">
+                    <i class="fa-solid fa-xmark"></i> Close
+                </div>
+            </div>
+    
+            <div class="settings-content">
+                <div id="tab-account" class="setting-tab">
+                    <h2>Account Details</h2>
+                    <div class="account-profile">
+                        <div class="profile-pic"><i class="fa-solid fa-user"></i></div>
+                        <div class="profile-info">
+                            <p><strong>Username:</strong> <span id="set-username">Admin_2026</span></p>
+                            <p><strong>System Role:</strong> Root Administrator</p>
+                            <p><strong>Last Login:</strong> Just Now</p>
+                        </div>
+                    </div>
+                    <button class="settings-btn" onclick="logout()">Change Account</button>
+                </div>
+    
+                <div id="tab-system" class="setting-tab" style="display:none;">
+                    <h2>System Preferences</h2>
+                    <div class="setting-row">
+                        <span>Background Blur</span>
+                        <input type="checkbox" checked>
+                    </div>
+                    <div class="setting-row">
+                        <span>Performance Mode</span>
+                        <input type="checkbox">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <audio id="globalAudio" onended="nextSong()"></audio>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+        const text = "Welcome back,Mr.Mask.";
+        const display = document.getElementById('userNameDisplay');
+        let i = -25;
+
+        function typeWriter() {
+            if (i < text.length) {
+                display.innerHTML += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 100);
+            }
+        }
+        
+        display.innerHTML = ""; // Clear existing text
+        typeWriter();
+    });
+
+
+        const user = localStorage.getItem('currentUser');
+        if (!user) {
+            window.location.href = "index.html";
+        } else {
+            document.getElementById('userNameDisplay').textContent = user;
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = "index.html";
+        }
+
+        function toggleMusicPlayer() {
+            const player = document.querySelector('.music-player');
+            player.classList.toggle('active');
+        }
+
+        const audio = document.getElementById('globalAudio');
+        const miniPlayIcon = document.getElementById('miniPlayIcon');
+        const miniDisc = document.getElementById('miniDisc');
+
+        // This function runs when any page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTrack = localStorage.getItem('lastTrackUrl');
+            const savedName = localStorage.getItem('lastTrackName');
+            
+            if (savedTrack) {
+                audio.src = savedTrack;
+                document.getElementById('miniTrackName').innerText = savedName;
+            }
+        });
+
+        function togglePlay() {
+            if (audio.src === "" || audio.src.includes("null")) return;
+
+            if (audio.paused) {
+                audio.play();
+                miniPlayIcon.classList.replace('fa-play', 'fa-pause');
+                miniDisc.classList.add('playing');
+            } else {
+                audio.pause();
+                miniPlayIcon.classList.replace('fa-pause', 'fa-play');
+                miniDisc.classList.remove('playing');
+            }
+        }
+
+        // When you pick a song in music.html, call this
+        function updateGlobalPlayer(name, artist, url) {
+            localStorage.setItem('lastTrackUrl', url);
+            localStorage.setItem('lastTrackName', name);
+            
+            audio.src = url;
+            document.getElementById('miniTrackName').innerText = name;
+            document.getElementById('miniArtistName').innerText = artist;
+            togglePlay();
+        }
+        
+
+        // Keep the interval running every second
+        setInterval(updateTimer, 1000);
+        updateTimer();
+
+        function updateTimer() {
+            const startDate = new Date("feb 12, 2025 02:19:00").getTime();
+            const now = new Date().getTime();
+            const difference = now - startDate;
+
+            const yrs = Math.floor(difference / (1000 * 60 * 60 * 24 * 365.25));
+            const d = Math.floor((difference % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24));
+            const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((difference % (1000 * 60)) / 1000);
+
+            // Update HTML
+            document.getElementById("years").innerText = yrs.toString().padStart(2, '0');
+            document.getElementById("days").innerText = d.toString().padStart(3, '0');
+            document.getElementById("hours").innerText = h.toString().padStart(2, '0');
+            document.getElementById("minutes").innerText = m.toString().padStart(2, '0');
+            document.getElementById("seconds").innerText = s.toString().padStart(2, '0');
+
+            // --- MILESTONE CHECK ---
+            const container = document.querySelector('.timer-container');
+            
+            // Check if it's an "Anniversary" (e.g., exactly 0 hours, 0 mins, 0 secs)
+            if (h === 0 && m === 0 && s === 0) {
+                triggerMilestone(container);
+            }
+        }
+
+        function triggerMilestone(el) {
+            el.classList.add('milestone-active');
+            // Remove the effect after 1 hour so it's only for the special moment
+            setTimeout(() => {
+                el.classList.remove('milestone-active');
+            }, 3600000); 
+        }
+
+        setInterval(updateTimer, 1000);
+        updateTimer();
+
+        function showMessagesAlert() {
+            document.getElementById('alertOverlay').style.display = 'flex';
+        }
+
+        function closeAlert() {
+            document.getElementById('alertOverlay').style.display = 'none';
+        }
+
+        function openSettings() {
+            document.getElementById('settingsOverlay').style.display = 'flex';
+            // Grab the current user from localStorage if you saved it during login
+            const user = localStorage.getItem('currentUser') || "Admin";
+            document.getElementById('set-username').innerText = user;
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsOverlay').style.display = 'none';
+        }
+
+        function showSettingTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.setting-tab').forEach(tab => tab.style.display = 'none');
+            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+            
+            // Show selected
+            document.getElementById('tab-' + tabName).style.display = 'block';
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>

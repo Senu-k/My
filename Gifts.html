@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Rewards | Gifts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Shared OS Styles */
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
+        #bg-video { position: fixed; top: 0; left: 0; min-width: 100%; min-height: 100%; z-index: -1; object-fit: cover; }
+
+        /* Gifts Page Layout */
+        .gifts-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .gift-grid {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .gift-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            width: 200px;
+            transition: 0.3s ease;
+        }
+
+        .gift-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #ffcc00; /* Gold glow */
+        }
+
+        .gift-icon { font-size: 40px; color: #ffcc00; margin-bottom: 15px; }
+        
+        .claim-btn {
+            background: #ffcc00;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        /* 2. THE BOTTOM TASKBAR */
+        .taskbar {
+            position: fixed;
+            bottom: 20px; /* Floating slightly above the bottom */
+            left: 50%;
+            transform: translateX(-50%); /* Centers the bar */
+            
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            
+            display: flex;
+            padding: 10px 20px;
+            gap: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 100;
+
+            
+        }
+
+        /* 3. TASKBAR ICONS */
+        .task-item {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 20px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        /* Tooltip style */
+        .task-item::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -40px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .task-item:hover::after { opacity: 1; top: -50px; }
+
+        .task-item:hover {
+            transform: translateY(-10px) scale(1.2);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .logout-btn {
+            background: rgba(255, 80, 80, 0.3) !important;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* (Insert Taskbar & Alert CSS here from previous conversations) */
+    
+        .alert-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 10001;
+        }
+
+        .alert-window {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            width: 350px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .alert-header {
+            background: rgba(255, 102, 204, 0.2); /* Pink tint */
+            padding: 10px 20px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-body {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .alert-body h3 { margin: 0 0 10px 0; color: #ff66cc; }
+        .alert-body p { font-size: 14px; opacity: 0.8; line-height: 1.5; }
+
+        .alert-btn {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: white;
+            color: black;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .alert-btn:hover { background: #ff66cc; color: white; }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .memory-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        .memory-card {
+            background: rgba(255, 182, 193, 0.1); /* Soft pink tint */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 20px;
+            width: 180px;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .memory-card:hover {
+            transform: translateY(-10px);
+            border-color: #ff66cc;
+            box-shadow: 0 10px 30px rgba(255, 102, 204, 0.3);
+        }
+
+        .date-badge {
+            background: #ff66cc;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        /* Modal Styling */
+        .memory-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(15px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 40000;
+        }
+
+        .memory-window {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 450px;
+            border-radius: 30px;
+            overflow: hidden;
+            animation: zoomIn 0.4s ease;
+        }
+
+        .memory-img-placeholder {
+            width: 100%;
+            height: 200px;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 50px;
+            color: rgba(255,255,255,0.2);
+        }
+
+        .special-gift {
+            margin-top: 20px;
+            background: rgba(255, 204, 0, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            color: #ffcc00;
+            border: 1px dashed #ffcc00;
+        }
+
+        .lock-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50000; /* Stays on top of EVERYTHING */
+        }
+
+        .lock-box {
+            text-align: center;
+            color: white;
+        }
+
+        .passcode-display {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .dot {
+            width: 15px; height: 15px;
+            border: 2px solid #ff66cc;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .dot.filled { background: #ff66cc; box-shadow: 0 0 10px #ff66cc; }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 70px);
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .keypad button {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .keypad button:hover {
+            background: #ff66cc;
+            transform: scale(1.1);
+        }
+
+
+
+
+
+
+    
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop id="bg-video">
+        <source src="Video/Sunset Above the Clouds Sky Timelapse Nature HD Scene Video Background Loop - HD Scenes (1080p, h264).mp4" type="video/mp4">
+    </video>
+
+    <div class="gifts-container">
+        <h1 style="letter-spacing: 5px;">OUR MEMORY VAULT</h1>
+        <p style="opacity: 0.7;">Click a date to relive the moment.</p>
+    
+        <div class="memory-grid">
+            <div class="memory-card" onclick="openMemory('first_meet')">
+                <div class="date-badge">14 FEB</div>
+                <h3>The First Meet</h3>
+                <i class="fa-solid fa-heart"></i>
+            </div>
+    
+            <div class="memory-card" onclick="openMemory('anniversary')">
+                <div class="date-badge">20 OCT</div>
+                <h3>Anniversary</h3>
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            
+            </div>
+    </div>
+    
+    <div id="memoryOverlay" class="memory-overlay">
+        <div class="memory-window">
+            <div class="memory-header">
+                <span id="memoryDate">DATE</span>
+                <button onclick="closeMemory()" class="close-mem">&times;</button>
+            </div>
+            <div class="memory-body">
+                <div id="memoryImage" class="memory-img-placeholder">
+                    <i class="fa-solid fa-image"></i>
+                </div>
+                <h2 id="memoryTitle">Title</h2>
+                <p id="memoryText">Description of the day goes here...</p>
+                <div class="special-gift">
+                    <i class="fa-solid fa-gift"></i>
+                    <span id="memoryGift">Gift details</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="lockOverlay" class="lock-overlay">
+        <div class="lock-box">
+            <i class="fa-solid fa-lock"></i>
+            <h2>AUTHENTICATION REQUIRED</h2>
+            <p>Enter the special 4-digit code</p>
+            
+            <div class="passcode-display">
+                <span id="dot1" class="dot"></span>
+                <span id="dot2" class="dot"></span>
+                <span id="dot3" class="dot"></span>
+                <span id="dot4" class="dot"></span>
+            </div>
+    
+            <div class="keypad">
+                <button onclick="pressKey(1)">1</button>
+                <button onclick="pressKey(2)">2</button>
+                <button onclick="pressKey(3)">3</button>
+                <button onclick="pressKey(4)">4</button>
+                <button onclick="pressKey(5)">5</button>
+                <button onclick="pressKey(6)">6</button>
+                <button onclick="pressKey(7)">7</button>
+                <button onclick="pressKey(8)">8</button>
+                <button onclick="pressKey(9)">9</button>
+                <button onclick="clearCode()">C</button>
+                <button onclick="pressKey(0)">0</button>
+                <button onclick="checkCode()"><i class="fa-solid fa-check"></i></button>
+            </div>
+            <p id="lockError" style="color: #ff4d4d; font-size: 12px; margin-top: 15px; height: 15px;"></p>
+        </div>
+    </div>
+
+    <div class="taskbar">
+        <a href="Dashboard.html" class="task-item" data-label="Home" style="background: #4a90e255;">
+            <i class="fa-solid fa-house"></i>
+        </a>
+        <a href="javascript:void(0)" class="task-item" onclick="showMessagesAlert()" data-label="Messages" style="background: #50e3c255;">
+            <i class="fa-solid fa-comment"></i>
+        </a>
+        <a href="Gifts.html" class="task-item" data-label="Gifts" style="background: #eaff5f55;">
+            <i class="fa-solid fa-gift"></i>
+        </a>
+        <a href="javascript:void(0)" class="task-item" onclick="showMessagesAlert()" data-label="Games" style="background: #29e9fb55;">
+            <i class="fa-solid fa-puzzle-piece"></i>
+        </a>
+        <a href="javascript:void(0)" class="task-item" onclick="showMessagesAlert()" data-label="Files" style="background: #f5a62355;">
+            <i class="fa-solid fa-folder"></i>
+        </a>
+        <a href="music.html" class="task-item" data-label="Music" style="background: #ff66cc55;">
+            <i class="fa-solid fa-music"></i>
+        </a>
+        <a href="#" class="task-item" data-label="Settings" style="background: #9b9b9b55;">
+            <i class="fa-solid fa-gear"></i>
+        </a>
+        <a href="#" class="task-item logout-btn" data-label="Logout" onclick="logout()">
+            <i class="fa-solid fa-power-off"></i>
+        </a>
+    </div>
+
+    <div id="alertOverlay" class="alert-overlay">
+        <div class="alert-window">
+            <div class="alert-header">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>SYSTEM MESSAGE</span>
+            </div>
+            <div class="alert-body">
+                <h3>Feature Unavailable</h3>
+                <p>Access to **Messages** is currently restricted. This module is scheduled for the next system update.</p>
+                <button onclick="closeAlert()" class="alert-btn">UNDERSTOOD</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gift Logic
+        function claimGift(name) {
+            alert("You have successfully claimed: " + name);
+        }
+
+        // Shared OS Logic (Alerts, Taskbar, etc.)
+        function showAlert(type) { /* ... copied from previous conversation ... */ }
+        function closeAlert() { /* ... */ }
+
+        function showMessagesAlert() {
+            document.getElementById('alertOverlay').style.display = 'flex';
+        }
+
+        function closeAlert() {
+            document.getElementById('alertOverlay').style.display = 'none';
+        }
+
+        const memoryData = {
+            first_meet: {
+                date: "February 14, 2024",
+                title: "The Day We Met",
+                text: "We met at the small coffee shop. I remember you were wearing that blue jacket. It was the start of everything.",
+                gift: "Digital Gift: A playlist of songs from that day."
+            },
+            anniversary: {
+                date: "October 20, 2024",
+                title: "Our First Anniversary",
+                text: "We went to the beach and watched the sunset. You told me you loved the view, but I was looking at you.",
+                gift: "Digital Gift: A secret letter saved in System Files."
+            }
+        };
+
+        function openMemory(id) {
+            const data = memoryData[id];
+            document.getElementById('memoryDate').innerText = data.date;
+            document.getElementById('memoryTitle').innerText = data.title;
+            document.getElementById('memoryText').innerText = data.text;
+            document.getElementById('memoryGift').innerText = data.gift;
+            
+            document.getElementById('memoryOverlay').style.display = 'flex';
+        }
+
+        function closeMemory() {
+            document.getElementById('memoryOverlay').style.display = 'none';
+        }
+
+        let currentInput = "";
+        const correctCode = "2026"; // CHANGE YOUR CODE HERE
+
+        function pressKey(num) {
+            if (currentInput.length < 4) {
+                currentInput += num;
+                updateDots();
+            }
+            
+            // Auto-check when 4 digits are entered
+            if (currentInput.length === 4) {
+                setTimeout(checkCode, 300);
+            }
+        }
+
+        function updateDots() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                if (i <= currentInput.length) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            }
+        }
+
+        function clearCode() {
+            currentInput = "";
+            updateDots();
+            document.getElementById('lockError').innerText = "";
+        }
+
+        function checkCode() {
+            if (currentInput === correctCode) {
+                // Unlock
+                document.getElementById('lockOverlay').style.transition = "0.5s";
+                document.getElementById('lockOverlay').style.opacity = "0";
+                setTimeout(() => {
+                    document.getElementById('lockOverlay').style.display = "none";
+                }, 500);
+            } else {
+                // Vibrate/Error effect
+                document.getElementById('lockError').innerText = "ACCESS DENIED";
+                currentInput = "";
+                setTimeout(updateDots, 500);
+            }
+        }
+
+    </script>
+</body>
+</html>
